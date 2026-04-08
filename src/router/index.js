@@ -16,12 +16,19 @@ const router = createRouter({
     },
     {
       path: '/register',
-      name: 'register',
       component: () => import('../views/RegisterView.vue'),
       children: [
-        { path: '', redirect: '/register/agreement' },
-        { path: 'agreement', component: import('../components/Register/RegisterAgreement.vue') },
-        { path: 'account', component: import('../components/Register/RegisterAccount.vue') },
+        { path: '', name: 'register', redirect: '/register/agreement' },
+        {
+          path: 'agreement',
+          name: 'registerAgreement',
+          component: () => import('../components/Register/RegisterAgreement.vue'),
+        },
+        {
+          path: 'account',
+          name: 'registerAccount',
+          component: () => import('../components/Register/RegisterAccount.vue'),
+        },
       ],
     },
     {

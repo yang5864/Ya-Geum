@@ -29,7 +29,7 @@ function handleNext() {
 </script>
 
 <template>
-  <div class="min-h-dvh bg-stone-50 flex flex-col px-5 pt-6 pb-8">
+  <div class="h-dvh bg-stone-50 flex flex-col px-5 pt-6 pb-8 overflow-hidden">
     <!-- 뒤로 버튼 -->
     <button
       @click="handlePrev"
@@ -54,19 +54,17 @@ function handleNext() {
       </span>
     </div>
 
-    <!-- 각 단계별 콘텐츠 영역 -->
-    <div class="mt-6 flex-1 flex flex-col">
+    <!-- 각 단계별 콘텐츠 영역 (내용이 길면 이 영역만 스크롤) -->
+    <div class="mt-6 flex-1 flex flex-col overflow-y-auto">
       <RouterView />
     </div>
 
     <!-- 다음 버튼 -->
     <RegisterButton
-      class="mt-8"
+      class="bottom-0"
       label="다음"
       :disabled="!userStore.isCurrentStepValid"
       @click="handleNext"
     />
   </div>
 </template>
-
-<style lang="scss" scoped></style>
