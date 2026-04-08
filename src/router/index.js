@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
 //import LoginView from '../views/LoginView.vue'
 const router = createRouter({
   history: createWebHistory(),
@@ -17,6 +18,11 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: () => import('../views/RegisterView.vue'),
+      children: [
+        { path: '', redirect: '/register/agreement' },
+        { path: 'agreement', component: import('../components/Register/RegisterAgreement.vue') },
+        { path: 'account', component: import('../components/Register/RegisterAccount.vue') },
+      ],
     },
     {
       path: '/transactions', // 이미지 기획서대로 s 추가
