@@ -1,11 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-//import LoginView from '../views/LoginView.vue'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: '/',
+      name: 'splash',
+      component: () => import('@/views/SplashView.vue'),
+    },
+    {
+      path: '/home',
       name: 'home',
       component: () => import('@/views/HomeView.vue'), // 가계부 메인
     },
@@ -29,11 +33,6 @@ const router = createRouter({
           name: 'registerAccount',
           component: () => import('@/components/Register/RegisterAccount.vue'),
         },
-        {
-          path: 'profile',
-          name: 'registerProfile',
-          component: () => import('@/components/Register/RegisterProfile.vue'),
-        },
       ],
     },
     {
@@ -52,7 +51,7 @@ const router = createRouter({
       component: () => import('@/views/TransactionDetailView.vue'),
     },
     {
-      path: '/profile',
+      path: '/settings',
       name: 'profile',
       component: () => import('@/views/ProfileView.vue'), // 프로필/설정
     },
