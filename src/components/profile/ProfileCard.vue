@@ -1,6 +1,17 @@
 <script setup>
 import { ref } from 'vue'
 import ramuFace from '@/assets/ramu_face.png'
+import logoutIcon from '@/assets/logout.svg'
+import { useAuthStore } from '@/stores/user'
+import { useRouter } from 'vue-router'
+
+const authStore = useAuthStore()
+const router = useRouter()
+
+function handleLogout() {
+  authStore.logout()
+  router.push('/login')
+}
 
 const props = defineProps({
   name: {
@@ -31,7 +42,16 @@ const props = defineProps({
 </script>
 
 <template>
-  <div class="bg-kb-card rounded-2xl p-4 shadow-sm">
+  <div class="bg-kb-card rounded-2xl p-4 shadow-sm relative">
+    <!-- 로그아웃 버튼 -->
+    <button
+      @click="handleLogout"
+      class="absolute top-4 right-4 p-1 rounded-full hover:bg-kb-line transition-colors"
+      aria-label="로그아웃"
+    >
+      <img :src="logoutIcon" alt="로그아웃" class="w-6 h-6" />
+    </button>
+
     <!-- 상단 프로필 -->
     <div class="flex items-center gap-4">
       <!-- 프로필 이미지 -->
