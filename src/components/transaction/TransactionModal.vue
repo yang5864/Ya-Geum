@@ -2,9 +2,9 @@
 import dayjs from 'dayjs'
 import { computed, onMounted, ref, watch } from 'vue'
 
-
 const HEADER_HEIGHT = 60
 const DEFAULT_HEIGHT = 520
+const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
 
 const isVisible = ref(false)
 
@@ -97,6 +97,8 @@ const amountInput = ref('')
 const selectedCategory = ref(expenseCategories[0].label)
 const selectedDate = ref(props.defaultDate)
 const memo = ref('')
+const isCalendarOpen = ref(false)
+const calendarMonth = ref(dayjs(props.defaultDate).startOf('month'))
 
 const categoryOptions = computed(() =>
   selectedType.value === 'expense' ? expenseCategories : incomeCategories,
@@ -111,6 +113,35 @@ const canSubmit = computed(
 )
 
 const formattedDate = computed(() => dayjs(selectedDate.value).format('YYYY. MM. DD.'))
+const calendarTitle = computed(() => calendarMonth.value.format('YYYY년 M월'))
+
+const calendarDays = computed(() => {
+  const start = calendarMonth.value.startOf('month').startOf('week')
+  const end = calendarMonth.value.endOf('month').endOf('week')
+  const days = []
+
+  let cursor = start
+
+  while (cursor.isBefore(end, 'day') || cursor.isSame(end, 'day')) {
+    days.push({
+      key: cursor.format('YYYY-MM-DD'),
+      value: cursor.format('YYYY-MM-DD'),
+      label: cursor.date(),
+      isCurrentMonth: cursor.isSame(calendarMonth.value, 'month'),
+      isSelected: cursor.isSame(selectedDate.value, 'day'),
+      isToday: cursor.isSame(dayjs(), 'day'),
+    })
+    cursor = cursor.add(1, 'day')
+  }
+
+  return days
+})
+
+const syncCalendarMonth = (dateValue) => {
+  const nextDate = dayjs(dateValue)
+  if (!nextDate.isValid()) return
+  calendarMonth.value = nextDate.startOf('month')
+}
 
 const resetForm = () => {
   selectedType.value = 'expense'
@@ -118,6 +149,8 @@ const resetForm = () => {
   selectedCategory.value = expenseCategories[0].label
   selectedDate.value = props.defaultDate
   memo.value = ''
+  isCalendarOpen.value = false
+  syncCalendarMonth(props.defaultDate)
 }
 
 watch(
@@ -132,8 +165,28 @@ watch(selectedType, () => {
   selectedCategory.value = categoryOptions.value[0]?.label ?? ''
 })
 
+watch(selectedDate, (dateValue) => {
+  syncCalendarMonth(dateValue)
+})
+
 const updateAmount = (event) => {
   amountInput.value = event.target.value.replace(/\D/g, '')
+}
+
+const toggleCalendar = () => {
+  isCalendarOpen.value = !isCalendarOpen.value
+  if (isCalendarOpen.value) {
+    syncCalendarMonth(selectedDate.value)
+  }
+}
+
+const moveCalendarMonth = (diff) => {
+  calendarMonth.value = calendarMonth.value.add(diff, 'month').startOf('month')
+}
+
+const selectCalendarDate = (dateValue) => {
+  selectedDate.value = dateValue
+  isCalendarOpen.value = false
 }
 
 onMounted(() => {
@@ -172,140 +225,201 @@ const handleSubmit = () => {
 
 <template>
   <Teleport to="#app-container">
-  <div
-    class="absolute inset-0 z-30 flex items-end transition-[background-color] duration-300"
-    :class="isVisible ? 'bg-kb-overlay' : 'bg-transparent'"
-    role="dialog"
-    aria-modal="true"
-    aria-label="거래 추가"
-    @click="handleBackdropClick"
-  >
-    <section
-      ref="sectionRef"
-      class="flex w-full flex-col rounded-t-[28px] bg-kb-card px-4 pb-4 pt-3 shadow-2xl"
-      :style="modalStyle"
+    <div
+      class="absolute inset-0 z-30 flex items-end transition-[background-color] duration-300"
+      :class="isVisible ? 'bg-kb-overlay' : 'bg-transparent'"
+      role="dialog"
+      aria-modal="true"
+      aria-label="거래 추가"
+      @click="handleBackdropClick"
     >
-      <div
-        class="mx-auto h-[5px] w-[80px] cursor-grab touch-none rounded-full bg-kb-line active:cursor-grabbing"
-        @pointerdown="onPointerDown"
-        @pointermove="onPointerMove"
-        @pointerup="onPointerUp"
-      ></div>
+      <section
+        ref="sectionRef"
+        class="flex w-full flex-col rounded-t-[28px] bg-kb-card px-4 pb-4 pt-3 shadow-2xl"
+        :style="modalStyle"
+      >
+        <div
+          class="mx-auto h-[5px] w-[80px] cursor-grab touch-none rounded-full bg-kb-line active:cursor-grabbing"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+        ></div>
 
-      <div class="mt-4 flex items-center justify-between">
-        <h2 class="text-[22px] font-black tracking-[-0.05em] text-kb-profit">거래 추가</h2>
-      </div>
-
-      <div class="mt-4 flex-1 overflow-y-auto pr-1">
-        <div class="rounded-[16px] bg-kb-app-bg p-[5px]">
-          <div class="grid grid-cols-2 gap-[5px]">
-            <button
-              type="button"
-              class="h-[46px] rounded-[12px] border bg-kb-card text-[15px] font-extrabold transition"
-              :class="
-                selectedType === 'expense'
-                  ? 'border-kb-line text-kb-expense shadow-sm'
-                  : 'border-transparent bg-transparent text-kb-muted shadow-none'
-              "
-              @click="selectedType = 'expense'"
-            >
-              지출
-            </button>
-            <button
-              type="button"
-              class="h-[46px] rounded-[12px] border bg-kb-card text-[15px] font-extrabold transition"
-              :class="
-                selectedType === 'income'
-                  ? 'border-kb-line text-kb-income shadow-sm'
-                  : 'border-transparent bg-transparent text-kb-muted shadow-none'
-              "
-              @click="selectedType = 'income'"
-            >
-              수입
-            </button>
-          </div>
+        <div class="mt-4 flex items-center justify-between">
+          <h2 class="text-[22px] font-black tracking-[-0.05em] text-kb-profit">거래 추가</h2>
         </div>
 
-        <div class="mt-4">
-          <label class="text-[13px] font-semibold text-kb-muted">금액</label>
-          <div class="mt-1 border-b-[2px] border-kb-yellow pb-1">
-            <input
-              :value="amountInput"
-              type="text"
-              inputmode="numeric"
-              placeholder="0"
-              class="w-full border-none bg-transparent text-[34px] font-black leading-none tracking-[-0.05em] text-kb-profit outline-none placeholder:text-kb-profit"
-              @input="updateAmount"
-            />
-          </div>
-        </div>
-
-        <div class="mt-3">
-          <label class="text-[13px] font-semibold text-kb-muted">카테고리</label>
-          <div class="mt-2 grid grid-cols-4 gap-2">
-            <button
-              v-for="category in categoryOptions"
-              :key="category.label"
-              type="button"
-              class="flex h-[68px] flex-col items-center justify-center gap-[5px] rounded-[14px] border px-2 text-center transition"
-              :class="
-                selectedCategory === category.label
-                  ? 'border-kb-yellow bg-kb-icon-yellow'
-                  : 'border-kb-line bg-kb-card'
-              "
-              @click="selectedCategory = category.label"
-            >
-              <img :src="category.icon" :alt="category.label" class="object-contain" :class="category.iconSize ?? 'h-5 w-5'" />
-              <span
-                class="text-[11px]"
-                :class="selectedCategory === category.label ? 'font-black text-kb-dark-gray' : 'font-semibold text-kb-gray'"
+        <div class="mt-4 flex-1 overflow-y-auto pr-1 scrollbar-hide">
+          <div class="rounded-[16px] bg-kb-app-bg p-[5px]">
+            <div class="grid grid-cols-2 gap-[5px]">
+              <button
+                type="button"
+                class="h-[46px] rounded-[12px] border bg-kb-card text-[15px] font-extrabold transition"
+                :class="
+                  selectedType === 'expense'
+                    ? 'border-kb-line text-kb-expense shadow-sm'
+                    : 'border-transparent bg-transparent text-kb-muted shadow-none'
+                "
+                @click="selectedType = 'expense'"
               >
-                {{ category.label }}
-              </span>
-            </button>
-          </div>
-        </div>
-
-        <div class="mt-4">
-          <label class="text-[13px] font-semibold text-kb-muted">날짜</label>
-          <div class="relative mt-1">
-            <input
-              v-model="selectedDate"
-              type="date"
-              class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-            />
-            <div
-              class="flex h-[56px] items-center justify-between rounded-[16px] border border-kb-line bg-kb-app-bg px-4"
-            >
-              <span class="text-[16px] font-medium tracking-[-0.02em] text-kb-profit">
-                {{ formattedDate }}
-              </span>
-              <span class="text-[13px] font-semibold text-kb-muted">달력</span>
+                지출
+              </button>
+              <button
+                type="button"
+                class="h-[46px] rounded-[12px] border bg-kb-card text-[15px] font-extrabold transition"
+                :class="
+                  selectedType === 'income'
+                    ? 'border-kb-line text-kb-income shadow-sm'
+                    : 'border-transparent bg-transparent text-kb-muted shadow-none'
+                "
+                @click="selectedType = 'income'"
+              >
+                수입
+              </button>
             </div>
           </div>
+
+          <div class="mt-4">
+            <label class="text-[13px] font-semibold text-kb-muted">금액</label>
+            <div class="mt-1 border-b-[2px] border-kb-yellow pb-1">
+              <input
+                :value="amountInput"
+                type="text"
+                inputmode="numeric"
+                placeholder="0"
+                class="w-full border-none bg-transparent text-[34px] font-black leading-none tracking-[-0.05em] text-kb-profit outline-none placeholder:text-kb-profit"
+                @input="updateAmount"
+              />
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <label class="text-[13px] font-semibold text-kb-muted">카테고리</label>
+            <div class="mt-2 grid grid-cols-4 gap-2">
+              <button
+                v-for="category in categoryOptions"
+                :key="category.label"
+                type="button"
+                class="flex h-[68px] flex-col items-center justify-center gap-[5px] rounded-[14px] border px-2 text-center transition"
+                :class="
+                  selectedCategory === category.label
+                    ? 'border-kb-yellow bg-kb-icon-yellow'
+                    : 'border-kb-line bg-kb-card'
+                "
+                @click="selectedCategory = category.label"
+              >
+                <img
+                  :src="category.icon"
+                  :alt="category.label"
+                  class="object-contain"
+                  :class="category.iconSize ?? 'h-5 w-5'"
+                />
+                <span
+                  class="text-[11px]"
+                  :class="
+                    selectedCategory === category.label
+                      ? 'font-black text-kb-dark-gray'
+                      : 'font-semibold text-kb-gray'
+                  "
+                >
+                  {{ category.label }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <label class="text-[13px] font-semibold text-kb-muted">날짜</label>
+            <div class="mt-1 rounded-[16px] border border-kb-line bg-kb-app-bg px-4 py-3">
+              <button
+                type="button"
+                class="flex w-full items-center justify-between"
+                @click="toggleCalendar"
+              >
+                <span class="text-[16px] font-medium tracking-[-0.02em] text-kb-profit">
+                  {{ formattedDate }}
+                </span>
+                <span class="text-[13px] font-semibold text-kb-muted">
+                  {{ isCalendarOpen ? '닫기' : '달력' }}
+                </span>
+              </button>
+
+              <div v-if="isCalendarOpen" class="mt-3 border-t border-kb-line pt-3">
+                <div class="flex items-center justify-between">
+                  <button
+                    type="button"
+                    class="flex h-8 w-8 items-center justify-center rounded-full text-[22px] text-kb-muted transition hover:bg-kb-card"
+                    @click="moveCalendarMonth(-1)"
+                  >
+                    ‹
+                  </button>
+                  <p class="text-[15px] font-extrabold tracking-[-0.03em] text-kb-profit">
+                    {{ calendarTitle }}
+                  </p>
+                  <button
+                    type="button"
+                    class="flex h-8 w-8 items-center justify-center rounded-full text-[22px] text-kb-muted transition hover:bg-kb-card"
+                    @click="moveCalendarMonth(1)"
+                  >
+                    ›
+                  </button>
+                </div>
+
+                <div class="mt-3 grid grid-cols-7 gap-1">
+                  <span
+                    v-for="label in WEEKDAY_LABELS"
+                    :key="label"
+                    class="text-center text-[11px] font-semibold text-kb-muted"
+                  >
+                    {{ label }}
+                  </span>
+                </div>
+
+                <div class="mt-2 grid grid-cols-7 gap-1">
+                  <button
+                    v-for="day in calendarDays"
+                    :key="day.key"
+                    type="button"
+                    class="flex aspect-square items-center justify-center rounded-full text-[13px] font-semibold transition"
+                    :class="
+                      day.isSelected
+                        ? 'bg-kb-yellow text-kb-dark-gray'
+                        : day.isCurrentMonth
+                          ? day.isToday
+                            ? 'border border-kb-yellow text-kb-profit'
+                            : 'text-kb-profit'
+                          : 'text-kb-empty'
+                    "
+                    @click="selectCalendarDate(day.value)"
+                  >
+                    {{ day.label }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <label class="text-[13px] font-semibold text-kb-muted">메모</label>
+            <textarea
+              v-model="memo"
+              rows="2"
+              maxlength="40"
+              placeholder="어디서"
+              class="mt-1 h-[80px] w-full resize-none rounded-[16px] border border-kb-line bg-kb-app-bg px-4 py-3 text-[16px] text-kb-profit outline-none placeholder:text-kb-muted"
+            ></textarea>
+          </div>
         </div>
 
-        <div class="mt-4">
-          <label class="text-[13px] font-semibold text-kb-muted">메모</label>
-          <textarea
-            v-model="memo"
-            rows="2"
-            maxlength="40"
-            placeholder="어디서"
-            class="mt-1 h-[80px] w-full resize-none rounded-[16px] border border-kb-line bg-kb-app-bg px-4 py-3 text-[16px] text-kb-profit outline-none placeholder:text-kb-muted"
-          ></textarea>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="mt-4 flex h-[64px] w-full items-center justify-center rounded-[22px] bg-kb-yellow text-[20px] font-black tracking-[-0.04em] text-kb-dark-gray shadow-[0_8px_20px_rgba(0,0,0,0.08)]"
-        :disabled="isSaving"
-        @click="handleSubmit"
-      >
-        {{ isSaving ? '저장 중...' : '저장하기' }}
-      </button>
-    </section>
-  </div>
+        <button
+          type="button"
+          class="mt-4 flex h-[64px] w-full items-center justify-center rounded-[22px] bg-kb-yellow text-[20px] font-black tracking-[-0.04em] text-kb-dark-gray shadow-[0_8px_20px_rgba(0,0,0,0.08)]"
+          :disabled="isSaving"
+          @click="handleSubmit"
+        >
+          {{ isSaving ? '저장 중...' : '저장하기' }}
+        </button>
+      </section>
+    </div>
   </Teleport>
 </template>

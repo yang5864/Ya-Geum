@@ -15,14 +15,27 @@ import {
 
 export const ALL_FILTER = '전체'
 
+const getTimestamp = (value) => {
+  const timestamp = dayjs(value).valueOf()
+  return Number.isNaN(timestamp) ? 0 : timestamp
+}
+
 const byNewestDate = (left, right) => {
-  const dateDiff = dayjs(right.date).valueOf() - dayjs(left.date).valueOf()
+  const dateDiff = getTimestamp(right.date) - getTimestamp(left.date)
 
   if (dateDiff !== 0) {
     return dateDiff
   }
 
-  return (right.id ?? 0) - (left.id ?? 0)
+  const updatedDiff =
+    getTimestamp(right.updatedAt ?? right.createdAt) -
+    getTimestamp(left.updatedAt ?? left.createdAt)
+
+  if (updatedDiff !== 0) {
+    return updatedDiff
+  }
+
+  return String(right.id ?? '').localeCompare(String(left.id ?? ''))
 }
 
 const normalizeCreatePayload = (payload) => ({
@@ -150,9 +163,7 @@ export const useBudgetStore = defineStore('budget', () => {
       .sort((left, right) => right.amount - left.amount)
   })
 
-  const fetchTransactions = async ({
-    month = currentMonth.value,
-  } = {}) => {
+  const fetchTransactions = async ({ month = currentMonth.value } = {}) => {
     isLoading.value = true
     errorMessage.value = ''
 
