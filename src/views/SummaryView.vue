@@ -84,7 +84,9 @@ function profitSign(value) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-[12px] p-[16px] bg-[#f5f5f5] flex-1 overflow-y-auto">
+  <div
+    class="flex flex-col gap-[12px] p-[16px] pb-[120px] bg-[#f5f5f5] overflow-y-auto flex-1 min-h-0"
+  >
     <section class="bg-white rounded-[16px] p-[20px] shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
       <h2 class="text-[15px] font-[700] text-[#222] m-0 mb-[16px]">월별 수입·지출</h2>
 
