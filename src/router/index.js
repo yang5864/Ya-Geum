@@ -1,22 +1,25 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
-//import LoginView from '../views/LoginView.vue'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: '/',
       name: 'home',
-      component: () => import('@/views/HomeView.vue'), // 가계부 메인
+      component: () => import('@/views/HomeView.vue'),
+      meta: { requiresAuth: true }, // 로그인 필요
     },
     {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
+      meta: { guest: true }, // 비로그인 전용 (로그인 상태에서 접근 시 홈으로)
     },
     {
       path: '/register',
       component: () => import('@/views/RegisterView.vue'),
+      meta: { guest: true }, // 비로그인 전용
       children: [
         { path: '', name: 'register', redirect: '/register/agreement' },
         {
@@ -37,26 +40,47 @@ const router = createRouter({
       ],
     },
     {
-      path: '/transactions', // 이미지 기획서대로 s 추가
+      path: '/transactions',
       name: 'summary',
-      component: () => import('@/views/SummaryView.vue'), // 요약 리스트
+      component: () => import('@/views/SummaryView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/challenge',
       name: 'challenge',
       component: () => import('@/views/ChallengeView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/transactions/:id',
       name: 'transaction-detail',
       component: () => import('@/views/TransactionDetailView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/profile',
       name: 'profile',
-      component: () => import('@/views/ProfileView.vue'), // 프로필/설정
+      component: () => import('@/views/ProfileView.vue'),
+      meta: { requiresAuth: true },
     },
   ],
+})
+
+// ────────────────────────────────────────────
+// 네비게이션 가드
+// ────────────────────────────────────────────
+router.beforeEach((to) => {
+  const userStore = useUserStore()
+
+  // 로그인이 필요한 페이지인데 비로그인 상태 → 로그인 페이지로
+  if (to.meta.requiresAuth && !userStore.isLoggedIn) {
+    return { name: 'login' }
+  }
+
+  // 비로그인 전용 페이지인데 로그인 상태 → 홈으로
+  if (to.meta.guest && userStore.isLoggedIn) {
+    return { name: 'home' }
+  }
 })
 
 export default router
