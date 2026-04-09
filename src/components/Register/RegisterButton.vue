@@ -16,6 +16,7 @@ defineEmits(['click'])
 
 <template>
   <button
+    type="button"
     @click="$emit('click')"
     :disabled="disabled"
     :class="[

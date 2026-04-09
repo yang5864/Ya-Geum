@@ -30,6 +30,16 @@ const isFormValid = computed(
   () => email.value !== '' && isPasswordValid.value && isPasswordMatch.value,
 )
 
+// 이메일 변경 시 스토어에 저장 (3단계로 넘어가도 유지)
+watch(email, (val) => {
+  userStore.setRegisterEmail(val)
+})
+
+// 비밀번호 변경 시 스토어에 저장 (3단계로 넘어가도 유지)
+watch(password, (val) => {
+  userStore.setRegisterPassword(val)
+})
+
 // 유효성 변경 시 스토어에 동기화
 watch(isFormValid, (val) => {
   userStore.setAccountStepValid(val)
