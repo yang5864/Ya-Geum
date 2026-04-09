@@ -1,6 +1,17 @@
 <script setup>
 import { ref } from 'vue'
 import ramuFace from '@/assets/ramu_face.png'
+import logoutIcon from '@/assets/logout.svg'
+import { useAuthStore } from '@/stores/user'
+import { useRouter } from 'vue-router'
+
+const authStore = useAuthStore()
+const router = useRouter()
+
+function handleLogout() {
+  authStore.logout()
+  router.push('/login')
+}
 
 const props = defineProps({
   name: {
@@ -31,27 +42,38 @@ const props = defineProps({
 </script>
 
 <template>
-  <div class="bg-white rounded-2xl p-4 shadow-sm">
+  <div class="bg-kb-card rounded-2xl p-4 shadow-sm relative">
+    <!-- 로그아웃 버튼 -->
+    <button
+      @click="handleLogout"
+      class="absolute top-4 right-4 p-1 rounded-full hover:bg-kb-line transition-colors"
+      aria-label="로그아웃"
+    >
+      <img :src="logoutIcon" alt="로그아웃" class="w-6 h-6" />
+    </button>
+
     <!-- 상단 프로필 -->
     <div class="flex items-center gap-4">
       <!-- 프로필 이미지 -->
       <div
-        class="w-16 h-16 rounded-full bg-[#FFBC00] flex items-center justify-center text-white text-2xl font-bold"
+        class="w-16 h-16 rounded-full bg-kb-yellow flex items-center justify-center text-white text-2xl font-bold"
       >
         <img :src="ramuFace" alt="프로필 이미지" class="w-16 h-16 rounded-full" />
       </div>
 
       <!-- 이름 & 아이디 -->
       <div class="flex-1">
-        <div class="text-lg font-bold">{{ name }}</div>
-        <div class="text-[#808080] text-sm">{{ username }}</div>
+        <div class="text-lg font-bold text-kb-profit">{{ name }}</div>
+        <div class="text-kb-muted text-sm">{{ username }}</div>
 
         <!-- 뱃지 -->
         <div class="flex gap-2 mt-2">
-          <span class="text-xs px-2 py-1 rounded-full bg-[#FFF3CC] text-[#7A5500] font-medium">
+          <span
+            class="text-xs px-2 py-1 rounded-full bg-kb-card-yellow text-kb-dark-gray font-medium"
+          >
             {{ level }}
           </span>
-          <span class="text-xs px-2 py-1 rounded-full bg-[#E8F5E9] text-[#2E7D32] font-medium">
+          <span class="text-xs px-2 py-1 rounded-full bg-kb-icon-green text-kb-income font-medium">
             {{ streak }}
           </span>
         </div>
@@ -59,7 +81,7 @@ const props = defineProps({
     </div>
 
     <!-- 구분선 -->
-    <div class="border-t my-4 text-[#E0E0E0]"></div>
+    <div class="border-t border-kb-line my-4"></div>
 
     <!-- 하단 정보 -->
     <div class="flex justify-between text-center">
