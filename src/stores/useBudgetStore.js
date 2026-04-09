@@ -155,7 +155,6 @@ export const useBudgetStore = defineStore('budget', () => {
   } = {}) => {
     isLoading.value = true
     errorMessage.value = ''
-    currentMonth.value = month
 
     try {
       transactions.value = await getTransactions({
