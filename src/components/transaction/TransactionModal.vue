@@ -79,17 +79,17 @@ const expenseCategories = [
   { label: '카페', icon: coffeeIcon, iconBg: 'bg-kb-icon-beige' },
   { label: '교통', icon: busIcon, iconBg: 'bg-kb-icon-blue' },
   { label: '쇼핑', icon: shoppingBagIcon, iconBg: 'bg-kb-icon-pink' },
-  { label: '의료', icon: medicalIcon, iconBg: 'bg-kb-icon-ivory' },
+  { label: '의료', icon: medicalIcon, iconBg: 'bg-kb-icon-ivory', iconSize: 'h-4 w-4' },
   { label: '여가', icon: leisureIcon, iconBg: 'bg-kb-icon-beige' },
-  { label: '주거', icon: homeIcon, iconBg: 'bg-kb-icon-ivory' },
-  { label: '기타', icon: etcIcon, iconBg: 'bg-kb-icon-ivory' },
+  { label: '주거', icon: homeIcon, iconBg: 'bg-kb-icon-ivory', iconSize: 'h-4 w-4' },
+  { label: '기타', icon: etcIcon, iconBg: 'bg-kb-icon-ivory', iconSize: 'h-4 w-4' },
 ]
 
 const incomeCategories = [
   { label: '급여', icon: salaryIcon, iconBg: 'bg-kb-icon-blue' },
   { label: '부업', icon: sideJobIcon, iconBg: 'bg-kb-icon-green' },
   { label: '투자', icon: investIcon, iconBg: 'bg-kb-icon-blue' },
-  { label: '기타', icon: etcIcon, iconBg: 'bg-kb-icon-ivory' },
+  { label: '기타', icon: etcIcon, iconBg: 'bg-kb-icon-ivory', iconSize: 'h-4 w-4' },
 ]
 
 const selectedType = ref('expense')
@@ -255,7 +255,7 @@ const handleSubmit = () => {
               "
               @click="selectedCategory = category.label"
             >
-              <img :src="category.icon" :alt="category.label" class="h-5 w-5 object-contain" />
+              <img :src="category.icon" :alt="category.label" class="object-contain" :class="category.iconSize ?? 'h-5 w-5'" />
               <span
                 class="text-[11px]"
                 :class="selectedCategory === category.label ? 'font-black text-kb-dark-gray' : 'font-semibold text-kb-gray'"

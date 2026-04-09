@@ -1,8 +1,11 @@
 import dayjs from 'dayjs'
+import 'dayjs/locale/ko'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
-import { useAuthStore } from './user'
+dayjs.locale('ko')
+
+import { DEFAULT_USER_ID } from '../api/axios'
 import {
   createTransaction,
   deleteTransaction,
@@ -58,6 +61,8 @@ export const useBudgetStore = defineStore('budget', () => {
 
   const monthlyTransactions = computed(() => [...transactions.value].sort(byNewestDate))
 
+  const CATEGORY_ORDER = ['식비', '카페', '교통', '쇼핑', '의료', '여가', '주거', '기타']
+
   const filterOptions = computed(() => {
     const expenseCategories = new Set(
       monthlyTransactions.value
@@ -65,7 +70,10 @@ export const useBudgetStore = defineStore('budget', () => {
         .map((transaction) => transaction.category),
     )
 
-    return [ALL_FILTER, '수입', '지출', ...Array.from(expenseCategories)]
+    const sorted = CATEGORY_ORDER.filter((c) => expenseCategories.has(c))
+    const rest = Array.from(expenseCategories).filter((c) => !CATEGORY_ORDER.includes(c))
+
+    return [ALL_FILTER, '수입', '지출', ...sorted, ...rest]
   })
 
   const filteredTransactions = computed(() => {
@@ -105,6 +113,27 @@ export const useBudgetStore = defineStore('budget', () => {
       },
     ),
   )
+
+  const groupedTransactions = computed(() => {
+    const groups = new Map()
+
+    filteredTransactions.value.forEach((transaction) => {
+      const key = transaction.date
+      const currentEntry = groups.get(key) ?? {
+        date: key,
+        label: dayjs(key).format('M월 D일 (dd)'),
+        total: 0,
+        items: [],
+      }
+
+      currentEntry.items.push(transaction)
+      currentEntry.total += transaction.type === 'income' ? transaction.amount : -transaction.amount
+
+      groups.set(key, currentEntry)
+    })
+
+    return Array.from(groups.values())
+  })
 
   const categorySummary = computed(() => {
     const totalsByCategory = new Map()
@@ -223,6 +252,7 @@ export const useBudgetStore = defineStore('budget', () => {
   return {
     addTransaction,
     categorySummary,
+    groupedTransactions,
     currentMonth,
     editTransaction,
     errorMessage,

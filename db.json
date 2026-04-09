@@ -237,52 +237,28 @@
       "updatedAt": "2026-03-20T19:10:00"
     },
     {
-      "userId": "WMNIxvbXK0s",
+      "id": "17",
+      "userId": 1,
       "type": "expense",
-      "category": "식비",
-      "amount": 333,
-      "date": "2026-04-09",
-      "merchant": "",
-      "memo": "",
-      "createdAt": "2026-04-09T06:02:24.149Z",
-      "updatedAt": "2026-04-09T06:02:24.149Z",
-      "id": "v2iMVnXNPfY"
+      "category": "의료",
+      "amount": 15000,
+      "date": "2026-04-03",
+      "merchant": "동네 병원",
+      "memo": "감기 진료",
+      "createdAt": "2026-04-03T10:00:00",
+      "updatedAt": "2026-04-03T10:00:00"
     },
     {
-      "userId": "WMNIxvbXK0s",
+      "id": "18",
+      "userId": 1,
       "type": "expense",
-      "category": "식비",
-      "amount": 2222,
-      "date": "2026-04-09",
-      "merchant": "",
-      "memo": "",
-      "createdAt": "2026-04-09T06:05:47.964Z",
-      "updatedAt": "2026-04-09T06:05:47.964Z",
-      "id": "LmG-nwUUT70"
-    },
-    {
-      "userId": "WMNIxvbXK0s",
-      "type": "expense",
-      "category": "교통",
-      "amount": 22222,
-      "date": "2026-04-09",
-      "merchant": "",
-      "memo": "",
-      "createdAt": "2026-04-09T06:07:14.652Z",
-      "updatedAt": "2026-04-09T06:07:14.652Z",
-      "id": "Iikr1fd1yWc"
-    },
-    {
-      "userId": "pATImzNd7lY",
-      "type": "expense",
-      "category": "식비",
-      "amount": 7000,
-      "date": "2026-04-09",
-      "merchant": "몽글몽글",
-      "memo": "몽글몽글",
-      "createdAt": "2026-04-09T06:23:02.295Z",
-      "updatedAt": "2026-04-09T06:23:02.295Z",
-      "id": "IK3IYXENGkg"
+      "category": "여가",
+      "amount": 32000,
+      "date": "2026-04-05",
+      "merchant": "영화관",
+      "memo": "주말 영화",
+      "createdAt": "2026-04-05T14:00:00",
+      "updatedAt": "2026-04-05T14:00:00"
     }
   ],
   "challenges": [

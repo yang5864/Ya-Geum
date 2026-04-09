@@ -1,21 +1,19 @@
 <script setup>
 import dayjs from 'dayjs'
-import 'dayjs/locale/ko'
 import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 
 import TransactionItem from '@/components/transaction/TransactionItem.vue'
 import TransactionModal from '@/components/transaction/TransactionModal.vue'
 import { ALL_FILTER, useBudgetStore } from '@/stores/useBudgetStore'
-
-dayjs.locale('ko')
+import { formatCompactWon, formatSignedWon } from '@/utils/format'
 
 const budgetStore = useBudgetStore()
 const {
   currentMonth,
   errorMessage,
-  filteredTransactions,
   filterOptions,
+  groupedTransactions,
   isLoading,
   isSaving,
   monthlySummary,
@@ -34,20 +32,6 @@ const defaultTransactionDate = computed(() => {
     : `${currentMonth.value}-01`
 })
 
-const formatCompactWon = (amount) => {
-  const absoluteAmount = Math.abs(amount)
-
-  if (absoluteAmount >= 1000000) {
-    return `${Math.round(absoluteAmount / 10000).toLocaleString()}만원`
-  }
-
-  return `${Math.round(absoluteAmount / 1000).toLocaleString()}천원`
-}
-
-const formatSignedWon = (amount) => {
-  const sign = amount > 0 ? '+' : amount < 0 ? '-' : ''
-  return `${sign}${Math.abs(amount).toLocaleString()}원`
-}
 
 const summaryCards = computed(() => [
   {
@@ -67,26 +51,6 @@ const summaryCards = computed(() => [
   },
 ])
 
-const groupedTransactions = computed(() => {
-  const groups = new Map()
-
-  filteredTransactions.value.forEach((transaction) => {
-    const key = transaction.date
-    const currentEntry = groups.get(key) ?? {
-      date: key,
-      label: dayjs(key).format('M월 D일 (dd)'),
-      total: 0,
-      items: [],
-    }
-
-    currentEntry.items.push(transaction)
-    currentEntry.total += transaction.type === 'income' ? transaction.amount : -transaction.amount
-
-    groups.set(key, currentEntry)
-  })
-
-  return Array.from(groups.values())
-})
 
 const moveMonth = (diff) => {
   const nextMonth = dayjs(`${currentMonth.value}-01`).add(diff, 'month').format('YYYY-MM')
@@ -106,7 +70,7 @@ const handleCreateTransaction = async (payload) => {
   try {
     await addTransaction(payload)
     setSelectedFilter(ALL_FILTER)
-    isTransactionModalOpen.value = false
+    closeTransactionModal()
   } catch (error) {
     console.error(error)
   }
@@ -171,12 +135,12 @@ watch(
       </section>
 
       <section class="px-3 pb-4 pt-3">
-        <div class="flex gap-2 overflow-x-auto pb-1">
+        <div class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
           <button
             v-for="option in filterOptions"
             :key="option"
             type="button"
-            class="shrink-0 rounded-full border px-5 py-2 text-[13px] font-semibold transition"
+            class="shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-semibold transition"
             :class="
               selectedFilter === option
                 ? 'border-kb-yellow bg-kb-yellow text-kb-dark-gray'
@@ -236,10 +200,10 @@ watch(
       v-if="!isTransactionModalOpen"
       type="button"
       aria-label="거래 추가"
-      class="absolute bottom-[96px] right-6 z-20 grid h-[72px] w-[72px] place-items-center rounded-full bg-kb-yellow text-kb-dark-gray shadow-lg"
+      class="absolute bottom-[96px] right-6 z-20 flex h-[64px] w-[64px] items-center justify-center rounded-full bg-kb-yellow text-kb-dark-gray shadow-lg"
       @click="openTransactionModal"
     >
-      <span class="block -translate-y-[1px] text-[42px] font-semibold leading-none">+</span>
+      <span class="text-[38px] font-semibold leading-none">+</span>
     </button>
 
     <TransactionModal
