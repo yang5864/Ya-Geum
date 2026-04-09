@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import house from '@/assets/home.svg'
 import cutlery from '@/assets/cutlery.svg'
 import shoppingBag from '@/assets/shoppingBag.svg'
@@ -9,16 +9,54 @@ import medical from '@/assets/Medical.svg'
 import leisure from '@/assets/leisure.svg'
 import invest from '@/assets/Invest.svg'
 import etc from '@/assets/Etc.svg'
+import { getTransactions } from '@/api/transaction'
 
-//TODO: api 연결 하면... 아래 임시 데이터 제거
-const monthlyData = ref([
-  { month: '1월', income: 10000000, expense: 99999 },
-  { month: '2월', income: 3849800, expense: 22222 },
-  { month: '3월', income: 2000, expense: 1500000 },
-  { month: '4월', income: 3500000, expense: 457000 },
-  { month: '5월', income: 500000, expense: 800000 },
-  { month: '6월', income: 11111111, expense: 222222 },
-])
+// 아이콘 매핑
+const iconMap = {
+  주거: house,
+  식비: cutlery,
+  쇼핑: shoppingBag,
+  카페: coffee,
+  교통: bus,
+  의료: medical,
+  여가: leisure,
+  투자: invest,
+  기타: etc,
+}
+
+const monthlyData = ref([])
+const categoryData = ref([])
+
+onMounted(async () => {
+  const transactions = await getTransactions()
+
+  // 월별 데이터 가공
+  const monthMap = {}
+  transactions.forEach((t) => {
+    const month = String(Number(t.date.slice(5, 7))) + '월'
+    if (!monthMap[month]) monthMap[month] = { month, income: 0, expense: 0 }
+    if (t.type === 'income') monthMap[month].income += t.amount
+    else monthMap[month].expense += t.amount
+  })
+  monthlyData.value = Object.values(monthMap).sort((a, b) => a.month.localeCompare(b.month))
+
+  // 카테고리별 데이터 가공 (지출만)
+  const categoryMap = {}
+  transactions
+    .filter((t) => t.type === 'expense')
+    .forEach((t) => {
+      if (!categoryMap[t.category]) categoryMap[t.category] = 0
+      categoryMap[t.category] += t.amount
+    })
+
+  const maxAmount = Math.max(...Object.values(categoryMap), 1)
+  categoryData.value = Object.entries(categoryMap).map(([name, amount]) => ({
+    icon: iconMap[name] ?? etc,
+    name,
+    amount,
+    max: maxAmount,
+  }))
+})
 
 const profitData = computed(() =>
   monthlyData.value
@@ -31,23 +69,11 @@ const profitData = computed(() =>
     })),
 )
 
-const categoryData = ref([
-  { icon: house, name: '주거', amount: 250000, max: 500000 },
-  { icon: cutlery, name: '식비', amount: 73000, max: 500000 },
-  { icon: shoppingBag, name: '쇼핑', amount: 89000, max: 500000 },
-  { icon: coffee, name: '카페', amount: 32000, max: 500000 },
-  { icon: bus, name: '교통', amount: 12500, max: 500000 },
-  { icon: medical, name: '의료', amount: 0, max: 500000 },
-  { icon: leisure, name: '여가', amount: 0, max: 500000 },
-  { icon: invest, name: '투자', amount: 0, max: 500000 },
-  { icon: etc, name: '기타', amount: 0, max: 500000 },
-])
-
-const chartWidth = 300
+const chartWidth = computed(() => Math.max(monthlyData.value.length * 50, 150))
 const chartHeight = 100
 const barWidth = 12
 
-const gap = computed(() => chartWidth / monthlyData.value.length)
+const gap = computed(() => chartWidth.value / monthlyData.value.length)
 
 const maxValue = computed(() =>
   Math.max(...monthlyData.value.flatMap((d) => [d.income, d.expense]), 1),
