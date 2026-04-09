@@ -2,10 +2,10 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/ko'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { useAuthStore } from './user'
 
 dayjs.locale('ko')
 
-import { DEFAULT_USER_ID } from '../api/axios'
 import {
   createTransaction,
   deleteTransaction,
@@ -151,17 +151,15 @@ export const useBudgetStore = defineStore('budget', () => {
   })
 
   const fetchTransactions = async ({
-    targetUserId = userId.value,
     month = currentMonth.value,
   } = {}) => {
     isLoading.value = true
     errorMessage.value = ''
-    userId.value = targetUserId
     currentMonth.value = month
 
     try {
       transactions.value = await getTransactions({
-        userId: targetUserId,
+        userId: userId.value,
         month,
       })
     } catch (error) {
@@ -268,6 +266,5 @@ export const useBudgetStore = defineStore('budget', () => {
     setCurrentMonth,
     setSelectedFilter,
     transactions,
-    userId,
   }
 })
