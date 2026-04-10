@@ -35,11 +35,11 @@ onMounted(async () => {
       .map((entry, i) => ({ ...entry, rank: i + 1 }))
 
     rankings.value = merged
-    console.log(
-      'rankings:',
-      JSON.stringify(rankings.value.map((r) => ({ userId: r.userId, name: r.name, rank: r.rank }))),
-    )
-    console.log('currentUserId:', authStore.currentUser?.id)
+
+    const myEntry = merged.find((r) => String(r.userId) === String(authStore.currentUser?.id))
+    if (myEntry) {
+      await authStore.updateProfile({ thisMonthRank: myEntry.rank })
+    }
   }
 
   await buildRankings()
