@@ -2,7 +2,6 @@ import './assets/main.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { createGtag } from 'vue-gtag'
 import App from './App.vue'
 import router from './router'
 
@@ -31,6 +30,5 @@ registerStore.resetRegister()
 // (router를 먼저 등록하면 초기 네비게이션 가드가 isLoggedIn=false 상태에서 실행됨)
 authStore.initAuth().finally(() => {
   app.use(router)
-  app.use(createGtag({ tagId: 'G-0GF7PNFY10', pageTracker: { router } }))
   app.mount('#app')
 })
