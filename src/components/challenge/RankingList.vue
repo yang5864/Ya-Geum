@@ -1,32 +1,40 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { iconMap } from '@/utils/icons'
+import apiClient from '@/api/axios'
+import { useAuthStore } from '@/stores/user'
 
-const rankings = ref([
-  { rank: 1, name: '박민준', category: '식비 챌린지', spent: 38420, saved: 61580, initial: '박' },
-  { rank: 2, name: '이서연', category: '식비 챌린지', spent: 52100, saved: 47900, initial: '이' },
-  { rank: 3, name: '김지훈', category: '식비 챌린지', spent: 61800, saved: 38200, initial: '김' },
-  { rank: 4, name: '최수진', category: '식비 챌린지', spent: 65500, saved: 34500, initial: '최' },
-  {
-    rank: 5,
-    name: '나 (홍길동)',
-    category: '식비 · 진행중',
-    spent: 67300,
-    saved: 32700,
-    initial: '나',
-    isMe: true,
-  },
-])
+const authStore = useAuthStore()
+const rankings = ref([])
+let pollingTimer = null
 
-// 상위 4명 추출
-const topFour = computed(() => {
-  return [...rankings.value].sort((a, b) => a.rank - b.rank).slice(0, 4)
+onMounted(async () => {
+  const challengeId = authStore.currentUser?.currentChallengeId
+  if (!challengeId) return
+
+  const fetch = async () => {
+    const res = await apiClient.get(`/challengeLeaderboard?challengeId=${challengeId}&_limit=100`)
+    rankings.value = res.data.sort((a, b) => a.rank - b.rank)
+  }
+
+  await fetch()
+
+  pollingTimer = setInterval(fetch, 3000)
 })
 
-// 내 데이터 추출
-const myRanking = computed(() => {
-  return rankings.value.find((item) => item.isMe)
+onUnmounted(() => {
+  if (pollingTimer) clearInterval(pollingTimer)
 })
+
+const myRanking = computed(() => rankings.value.find((r) => r.isMe))
+const myRank = computed(() => myRanking.value?.rank ?? 999)
+const topTen = computed(() => rankings.value.filter((r) => !r.isMe).slice(0, 10))
+const listItems = computed(() =>
+  rankings.value
+    .slice()
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, 10),
+)
 </script>
 
 <template>
@@ -37,82 +45,189 @@ const myRanking = computed(() => {
       <h3 class="text-lg font-bold text-kb-profit">절약 랭킹</h3>
     </div>
 
+    <div
+      v-if="rankings.length === 0"
+      class="bg-kb-card rounded-[20px] p-6 text-center text-sm text-kb-muted"
+    >
+      랭킹 정보가 없습니다
+    </div>
+
     <!-- 랭킹 리스트 -->
-    <div class="flex flex-col gap-3">
-      <div class="bg-kb-card rounded-[20px] overflow-hidden border border-kb-divider shadow-sm">
+    <div v-else class="flex flex-col gap-3">
+      <!-- 10위 안에 있을 때: 3개 박스로 분리 -->
+      <template v-if="myRanking && myRank <= 10">
+        <!-- 내 순위 위 -->
         <div
-          v-for="(item, index) in topFour"
-          :key="item.rank"
-          class="flex items-center justify-between px-3 py-2"
-          :class="{ 'border-b border-kb-divider': index !== 3 }"
+          v-if="myRank > 1"
+          class="bg-kb-card rounded-[20px] overflow-hidden border border-kb-divider shadow-sm"
+        >
+          <div
+            v-for="(item, index) in listItems.filter((r) => r.rank < myRank)"
+            :key="item.rank"
+            class="flex items-center justify-between px-3 py-2"
+            :class="{
+              'border-b border-kb-divider':
+                index !== listItems.filter((r) => r.rank < myRank).length - 1,
+            }"
+          >
+            <div class="flex items-center gap-4">
+              <span
+                class="text-base font-bold w-4 text-center"
+                :class="
+                  item.rank === 1
+                    ? 'text-kb-yellow'
+                    : item.rank === 2
+                      ? 'text-kb-muted'
+                      : item.rank === 3
+                        ? 'text-kb-empty'
+                        : 'text-kb-line'
+                "
+                >{{ item.rank }}</span
+              >
+              <div
+                class="w-10 h-10 rounded-full bg-kb-icon-yellow flex items-center justify-center text-kb-dark-gray font-bold"
+              >
+                {{ item.name.charAt(0) }}
+              </div>
+              <p class="font-bold text-[14px] text-kb-profit">{{ item.name }}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-[14px] text-kb-profit">
+                {{ item.spentAmount.toLocaleString() }}원
+              </p>
+              <p class="text-[11px] text-kb-income font-semibold opacity-80">
+                {{ item.savedAmount.toLocaleString() }}원 절약
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 내 순위 박스 -->
+        <div
+          class="flex items-center justify-between p-4 h-[56px] rounded-[20px] bg-kb-card-yellow border-2 border-kb-yellow shadow-sm"
         >
           <div class="flex items-center gap-4">
-            <span
-              class="text-base font-bold w-4 text-center"
-              :class="
-                item.rank === 1
-                  ? 'text-kb-yellow'
-                  : item.rank === 2
-                    ? 'text-kb-muted'
-                    : item.rank === 3
-                      ? 'text-kb-empty'
-                      : 'text-kb-line'
-              "
-            >
-              {{ item.rank }}
-            </span>
+            <span class="text-base font-bold w-4 text-center text-kb-dark-gray">{{
+              myRanking.rank
+            }}</span>
             <div
-              class="w-10 h-10 rounded-full bg-kb-icon-yellow flex items-center justify-center text-kb-dark-gray font-bold"
+              class="w-10 h-10 rounded-full bg-kb-yellow flex items-center justify-center text-kb-dark-gray font-bold"
             >
-              {{ item.initial }}
+              {{ myRanking.name.charAt(0) }}
             </div>
-            <div>
-              <p class="font-bold text-[14px] text-kb-profit leading-tight">{{ item.name }}</p>
-              <p class="text-[11px] text-kb-muted font-medium">{{ item.category }}</p>
-            </div>
+            <p class="font-bold text-[14px] text-kb-profit">{{ myRanking.name }}</p>
           </div>
-
           <div class="text-right">
-            <p class="font-bold text-[14px] text-kb-profit leading-tight">
-              {{ item.spent.toLocaleString() }}원
+            <p class="font-bold text-[14px] text-kb-profit">
+              {{ myRanking.spentAmount.toLocaleString() }}원
             </p>
-            <p class="text-[11px] text-kb-income font-semibold opacity-80">
-              {{ item.saved.toLocaleString() }}원 절약
+            <p class="text-[11px] text-kb-income font-semibold">
+              {{ myRanking.savedAmount.toLocaleString() }}원 절약
             </p>
           </div>
         </div>
-      </div>
 
-      <div
-        v-if="myRanking"
-        class="flex items-center justify-between p-4 h-[56px] rounded-[20px] bg-kb-card-yellow border-2 border-kb-yellow shadow-sm"
-      >
-        <div class="flex items-center gap-4">
-          <span class="text-base font-bold w-4 text-center text-kb-dark-gray">{{
-            myRanking?.rank
-          }}</span>
+        <!-- 내 순위 아래 -->
+        <div
+          v-if="myRank < 10"
+          class="bg-kb-card rounded-[20px] overflow-hidden border border-kb-divider shadow-sm"
+        >
           <div
-            class="w-10 h-10 rounded-full bg-kb-yellow flex items-center justify-center text-kb-dark-gray font-bold"
+            v-for="(item, index) in listItems.filter((r) => r.rank > myRank)"
+            :key="item.rank"
+            class="flex items-center justify-between px-3 py-2"
+            :class="{
+              'border-b border-kb-divider':
+                index !== listItems.filter((r) => r.rank > myRank).length - 1,
+            }"
           >
-            {{ myRanking?.initial }}
+            <div class="flex items-center gap-4">
+              <span class="text-base font-bold w-4 text-center text-kb-line">{{ item.rank }}</span>
+              <div
+                class="w-10 h-10 rounded-full bg-kb-icon-yellow flex items-center justify-center text-kb-dark-gray font-bold"
+              >
+                {{ item.name.charAt(0) }}
+              </div>
+              <p class="font-bold text-[14px] text-kb-profit">{{ item.name }}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-[14px] text-kb-profit">
+                {{ item.spentAmount.toLocaleString() }}원
+              </p>
+              <p class="text-[11px] text-kb-income font-semibold opacity-80">
+                {{ item.savedAmount.toLocaleString() }}원 절약
+              </p>
+            </div>
           </div>
-          <div>
-            <p class="font-bold text-[14px] text-kb-profit leading-tight">{{ myRanking?.name }}</p>
-            <p class="text-[11px] text-kb-dark-gray opacity-60 font-medium">
-              {{ myRanking?.category }}
-            </p>
+        </div>
+      </template>
+
+      <!-- 10위 밖일 때: 기존 디자인 -->
+      <template v-else>
+        <div class="bg-kb-card rounded-[20px] overflow-hidden border border-kb-divider shadow-sm">
+          <div
+            v-for="(item, index) in topTen"
+            :key="item.rank"
+            class="flex items-center justify-between px-3 py-2"
+            :class="{ 'border-b border-kb-divider': index !== topTen.length - 1 }"
+          >
+            <div class="flex items-center gap-4">
+              <span
+                class="text-base font-bold w-4 text-center"
+                :class="
+                  item.rank === 1
+                    ? 'text-kb-yellow'
+                    : item.rank === 2
+                      ? 'text-kb-muted'
+                      : item.rank === 3
+                        ? 'text-kb-empty'
+                        : 'text-kb-line'
+                "
+                >{{ item.rank }}</span
+              >
+              <div
+                class="w-10 h-10 rounded-full bg-kb-icon-yellow flex items-center justify-center text-kb-dark-gray font-bold"
+              >
+                {{ item.name.charAt(0) }}
+              </div>
+              <p class="font-bold text-[14px] text-kb-profit">{{ item.name }}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-[14px] text-kb-profit">
+                {{ item.spentAmount.toLocaleString() }}원
+              </p>
+              <p class="text-[11px] text-kb-income font-semibold opacity-80">
+                {{ item.savedAmount.toLocaleString() }}원 절약
+              </p>
+            </div>
           </div>
         </div>
 
-        <div class="text-right">
-          <p class="font-bold text-[14px] text-kb-profit leading-tight">
-            {{ myRanking?.spent?.toLocaleString() }}원
-          </p>
-          <p class="text-[11px] text-kb-income font-semibold">
-            {{ myRanking?.saved?.toLocaleString() }}원 절약중
-          </p>
+        <div
+          v-if="myRanking"
+          class="flex items-center justify-between p-4 h-[56px] rounded-[20px] bg-kb-card-yellow border-2 border-kb-yellow shadow-sm"
+        >
+          <div class="flex items-center gap-4">
+            <span class="text-base font-bold w-4 text-center text-kb-dark-gray">{{
+              myRanking.rank
+            }}</span>
+            <div
+              class="w-10 h-10 rounded-full bg-kb-yellow flex items-center justify-center text-kb-dark-gray font-bold"
+            >
+              {{ myRanking.name.charAt(0) }}
+            </div>
+            <p class="font-bold text-[14px] text-kb-profit">{{ myRanking.name }}</p>
+          </div>
+          <div class="text-right">
+            <p class="font-bold text-[14px] text-kb-profit">
+              {{ myRanking.spentAmount.toLocaleString() }}원
+            </p>
+            <p class="text-[11px] text-kb-income font-semibold">
+              {{ myRanking.savedAmount.toLocaleString() }}원 절약
+            </p>
+          </div>
         </div>
-      </div>
+      </template>
     </div>
   </div>
 </template>

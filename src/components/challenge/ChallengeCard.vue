@@ -1,106 +1,78 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import ramuPushImg from '@/assets/ramu_push.png'
 import ramuEndImg from '@/assets/ramu_end.png'
+import apiClient from '@/api/axios'
+import { useAuthStore } from '@/stores/user'
 
-// 현재 연월
+const authStore = useAuthStore()
+const challenge = ref(null)
+const progressBarWidth = ref(0)
+const progressBarRef = ref(null)
+const mounted = ref(false)
+
+onMounted(async () => {
+  // 데이터 fetch
+  const challengeId = authStore.currentUser?.currentChallengeId
+  if (challengeId) {
+    const res = await apiClient.get(`/challenges/${challengeId}`)
+    challenge.value = res.data
+  }
+
+  // fetch 후 DOM 업데이트 기다렸다가 진행바 측정
+  await nextTick()
+  mounted.value = true
+  const el = progressBarRef.value
+  if (!el) return
+  progressBarWidth.value = el.offsetWidth
+  const ro = new ResizeObserver(() => {
+    if (el) progressBarWidth.value = el.offsetWidth
+  })
+  ro.observe(el)
+})
+
 const currentMonth = new Date().getMonth() + 1
 const currentYear = new Date().getFullYear()
 const periodText = computed(() => `${currentYear}년 ${currentMonth}월 전체`)
 
-// props
-const props = defineProps({
-  title: {
-    type: String,
-    default: '10만원 한달살기',
-  },
-  category: {
-    type: String,
-    default: '식비 카테고리',
-  },
-  amount: {
-    type: Number,
-    default: 90000,
-  },
-  weekStatus: {
-    type: Number,
-    default: 3,
-  },
+const title = computed(() => challenge.value?.title || '')
+const category = computed(() => {
+  const desc = challenge.value?.description || ''
+  const match = desc.match(/^(.+카테고리)/)
+  return match ? match[1] : desc
 })
+const amount = computed(() => challenge.value?.spentAmount || 0)
+const maxAmount = computed(() => challenge.value?.targetAmount || 100000)
 
-// title에서 금액 자동 파싱
-const maxAmount = computed(() => {
-  const title = props.title
-
-  const manMatch = title.match(/(\d+(\.\d+)?)만원/)
-  if (manMatch) return Math.round(parseFloat(manMatch[1]) * 10000)
-
-  const cheonMatch = title.match(/(\d+(\.\d+)?)천원/)
-  if (cheonMatch) return Math.round(parseFloat(cheonMatch[1]) * 1000)
-
-  const rawMatch = title.match(/(\d+)원/)
-  if (rawMatch) return parseInt(rawMatch[1])
-
-  return 100000
-})
-
-// 남은 금액
-const saved = computed(() => Math.max(maxAmount.value - props.amount, 0))
-
-// 진행률 퍼센트
-const progressPercent = computed(() => Math.min((props.amount / maxAmount.value) * 100, 100))
-
-// 진행바 DOM 측정
-const progressBarWidth = ref(0)
-const progressBarRef = ref(null)
-const mounted = ref(false)
-onMounted(() => {
-  mounted.value = true
-
-  const el = progressBarRef.value
-  if (!el) return
-
-  progressBarWidth.value = el.offsetWidth
-
-  const ro = new ResizeObserver(() => {
-    if (el) {
-      progressBarWidth.value = el.offsetWidth
-    }
-  })
-
-  ro.observe(el)
-})
-
-// 초과 여부, 초과 금액
-const isOver = computed(() => props.amount >= maxAmount.value)
-const overAmount = computed(() => props.amount - maxAmount.value)
-
-// 캐릭터 이미지
+const saved = computed(() => Math.max(maxAmount.value - amount.value, 0))
+const progressPercent = computed(() => Math.min((amount.value / maxAmount.value) * 100, 100))
+const isOver = computed(() => amount.value >= maxAmount.value)
+const overAmount = computed(() => amount.value - maxAmount.value)
 const currentImg = computed(() => (isOver.value ? ramuEndImg : ramuPushImg))
 
-// 캐릭터 스타일
 const characterStyle = computed(() => {
   if (!mounted.value || !progressBarWidth.value) return { opacity: 0 }
-
   const barWidth = progressBarWidth.value
   const imgWidth = isOver.value ? 64 : 44
   const pos = Math.min(Math.max(progressPercent.value, 0), 100)
   const px = (pos / 100) * barWidth
   let leftPx = px - imgWidth / 2
-
-  // 왼쪽/오른쪽 끝 보정
   if (leftPx < 0) leftPx = 0
   if (leftPx > barWidth - imgWidth) leftPx = barWidth - imgWidth
-
-  return {
-    left: `${leftPx}px`,
-    transition: 'all 0.5s ease-out',
-  }
+  return { left: `${leftPx}px`, transition: 'all 0.5s ease-out' }
 })
 </script>
 
 <template>
   <div
+    v-if="!challenge"
+    class="bg-kb-yellow px-4 py-3 rounded-[24px] shadow-sm h-48 flex items-center justify-center"
+  >
+    <p class="text-kb-gray text-sm">챌린지를 불러오는 중...</p>
+  </div>
+
+  <div
+    v-else
     class="bg-kb-yellow px-4 py-3 rounded-[24px] shadow-sm relative flex flex-col justify-between overflow-visible"
   >
     <!-- 상단 정보 -->
@@ -168,24 +140,24 @@ const characterStyle = computed(() => {
     <!-- 주차 상태 -->
     <div class="grid grid-cols-4 gap-2">
       <div
-        v-for="i in 4"
+        v-for="(week, i) in challenge?.weeks || []"
         :key="i"
         class="text-center py-1 rounded-xl text-[11px] font-bold transition-all text-kb-dark-gray"
         :class="
-          i === weekStatus
+          week.status === 'current'
             ? 'bg-kb-yellow text-white shadow-sm scale-105'
-            : i < weekStatus
+            : week.status === 'done'
               ? 'bg-white/60'
               : 'bg-white/30'
         "
       >
-        {{ i }}주
+        {{ i + 1 }}주
         <div
           class="text-[9px] font-normal opacity-80"
-          :class="i < weekStatus ? 'text-kb-income' : ''"
+          :class="week.status === 'done' ? 'text-kb-income' : ''"
         >
-          <span v-if="i < weekStatus">완료</span>
-          <span v-else-if="i === weekStatus">진행중</span>
+          <span v-if="week.status === 'done'">완료</span>
+          <span v-else-if="week.status === 'current'">진행중</span>
           <span v-else>진행 전</span>
         </div>
       </div>
