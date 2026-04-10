@@ -37,7 +37,10 @@ onMounted(async () => {
     isLoading.value = false
   }
 
-  challenges.value = history.map((item) => ({
+  challenges.value = history
+    .slice()
+    .sort((a, b) => b.month.localeCompare(a.month))
+    .map((item) => ({
     id: item.id,
     title: item.title,
     date: formatMonth(item.month),
