@@ -32,7 +32,9 @@ onMounted(async () => {
     if (t.type === 'income') monthMap[month].income += t.amount
     else monthMap[month].expense += t.amount
   })
-  monthlyData.value = Object.values(monthMap).sort((a, b) => a.month.localeCompare(b.month))
+  monthlyData.value = Object.values(monthMap).sort(
+    (a, b) => parseInt(a.month) - parseInt(b.month),
+  )
 
   // 카테고리별 데이터 가공 (지출만)
   const categoryMap = {}
