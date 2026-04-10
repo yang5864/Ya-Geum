@@ -55,9 +55,10 @@ onDeactivated(() => {
   if (pollingTimer) clearInterval(pollingTimer)
 })
 
-onActivated(() => {
+onActivated(async () => {
   if (!buildRankings) return
   if (pollingTimer) clearInterval(pollingTimer)
+  await buildRankings()
   pollingTimer = setInterval(buildRankings, 3000)
 })
 
