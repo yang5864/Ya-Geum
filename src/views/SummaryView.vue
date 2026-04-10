@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { getTransactions } from '@/api/transaction'
 import { iconMap } from '@/utils/icons'
 import { useAuthStore } from '@/stores/user'
+import { formatCompactWon } from '@/utils/format'
 
 const categoryIconMap = {
   주거: iconMap.home,
@@ -94,10 +95,7 @@ function barY(value) {
 }
 
 function formatAmount(value) {
-  if (Math.abs(value) >= 10000) {
-    return (value / 10000).toLocaleString() + '만원'
-  }
-  return value.toLocaleString() + '원'
+  return formatCompactWon(value)
 }
 
 function profitSign(value) {

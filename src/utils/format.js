@@ -1,11 +1,11 @@
+// 천원 단위까지 표현, 100원 이하 버림 (예: 39,450원 → 3.9만원)
 export const formatCompactWon = (amount) => {
-  const absoluteAmount = Math.abs(amount)
-
-  if (absoluteAmount >= 1000000) {
-    return `${Math.round(absoluteAmount / 10000).toLocaleString()}만원`
+  const abs = Math.abs(amount)
+  if (abs >= 10000) {
+    const value = Math.floor(abs / 1000) / 10
+    return `${value.toLocaleString()}만원`
   }
-
-  return `${Math.round(absoluteAmount / 10000).toLocaleString()}만원`
+  return `${abs.toLocaleString()}원`
 }
 
 export const formatSignedWon = (amount) => {
